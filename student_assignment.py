@@ -48,7 +48,9 @@ def generate_hw01(question):
 def get_hw2_response(year: int, month: int):
     url = f"https://calendarific.com/api/v2/holidays?&api_key=JlDYea1pV7aqbgqlxlb6P6rrDurH7Uvs&country=tw&year={year}&month={month}"
     response = requests.get(url)
-    return response
+    data = response.json()
+    holidays = data['response']['holidays']
+    return holidays
 class GetValue(BaseModel):
     year: int = Field(description= "年份")
     month: int = Field(description= "月份")
@@ -79,10 +81,11 @@ def generate_hw02(question):
     output_parser = StructuredOutputParser.from_response_schemas(response_schemas=response_schema)
     format_instructions = output_parser.get_format_instructions()
     prompt = ChatPromptTemplate.from_messages([
-        ("system","將格式整理成Json.\n{format_instructions}"),
+        ("system","將所有紀念日收集後，整理成Json格式.\n{format_instructions}"),
         ("human","{question}")
     ])
     prompt = prompt.partial(format_instructions = format_instructions)
+
     response = llm.invoke(prompt.format_messages(question = response)).content
 
     return generateAnswer(response)
