@@ -26,7 +26,7 @@ def generateAnswer(response):
 def generate_hw01(question):
 
     response_schema = [
-        ResponseSchema(name = 'result', description= '請將節慶放到此處', type= 'list'),
+        ResponseSchema(name = 'Result', description= '請將節慶放到此處', type= 'list'),
         ResponseSchema(name = 'date', description= '請將節慶日期放到此處', type= 'YYYY-MM-DD'),
         ResponseSchema(name = 'name', description= '請將節慶名稱放到此處', type= 'String'),
     ]
