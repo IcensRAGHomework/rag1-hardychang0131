@@ -207,5 +207,3 @@ question = "2024年台灣10月紀念日有哪些?"
 question2 = "2024年台灣10月紀念日有哪些?"
 question3 = "蔣公誕辰紀念日是否有在該月份清單？"
 question4 = "請解析提供的圖片檔案 baseball.png，並回答圖片中有關問題的內容，請問中華台北的積分是多少?"
-
-print(generate_hw04(question4))
