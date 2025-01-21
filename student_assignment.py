@@ -23,9 +23,9 @@ def generateAnswer(response):
     response = response[8:-4]
 
     # print(json.loads(response))
-    
-    return response
+    response = json.dumps(response, ensure_ascii=False, indent=4)
 
+    return response
 
 def generate_hw01(question):
 
