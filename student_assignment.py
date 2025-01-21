@@ -13,6 +13,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
+import base64
+from mimetypes import guess_type
 
 gpt_chat_version = 'gpt-4o'
 gpt_config = get_model_configuration(gpt_chat_version)
@@ -137,9 +139,46 @@ def generate_hw03(question2, question3):
     prompt = prompt.partial(format_instructions = format_instructions)
     response = llm.invoke(prompt.format_messages(question = response)).content
     return generateAnswer(response)
-    
+
+
+
+
+
+def local_image_to_data_url(image_path):
+    mime_type, _ = guess_type(image_path)
+    if mime_type is None:
+        mime_type = 'application/octet-stream'
+
+    with open(image_path, "rb") as image_file:
+        base64_encode_data = base64.b64encode(image_file.read()).decode('utf-8')
+
+    return f"data:{mime_type};base64,{base64_encode_data}"
+
+
+class inner_result_hw4(BaseModel):
+    score: int
+
+class result_hw4(BaseModel):
+    Result: inner_result_hw4
+
+
 def generate_hw04(question):
-    pass
+    data_url = local_image_to_data_url("./baseball.png")
+    prompt = ChatPromptTemplate.from_messages([
+        ("system","請識別圖片中的文字表格，並且用json表示"),
+        ("user",[
+            {
+                "type":"image_url",
+                "image_url":{"url":data_url},
+            }
+        ],),
+        ("human","{question}，請將回答放入Result中，只有一個欄位score，將分數放到此處")
+    ])
+    output_parser = PydanticOutputParser(pydantic_object=result_hw4)
+    format_instructions = output_parser.get_format_instructions()
+    prompt = prompt.partial(format_instructions = format_instructions)
+    response = llm.invoke(prompt.format_messages(question = question)).content
+    return generateAnswer(response)
     
 def demo(question):
     llm = AzureChatOpenAI(
@@ -167,4 +206,6 @@ question = "2024年台灣10月紀念日有哪些?"
 
 question2 = "2024年台灣10月紀念日有哪些?"
 question3 = "蔣公誕辰紀念日是否有在該月份清單？"
-print(generate_hw03(question2,question3))
+question4 = "請解析提供的圖片檔案 baseball.png，並回答圖片中有關問題的內容，請問中華台北的積分是多少?"
+
+print(generate_hw04(question4))
