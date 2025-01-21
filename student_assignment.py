@@ -6,11 +6,14 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from model_configurations import get_model_configuration
-
+from langchain.output_parsers import PydanticOutputParser
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import HumanMessage
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
 gpt_chat_version = 'gpt-4o'
 gpt_config = get_model_configuration(gpt_chat_version)
 llm = AzureChatOpenAI(
@@ -90,8 +93,50 @@ def generate_hw02(question):
 
     return generateAnswer(response)
     
+
+class InnerResult(BaseModel):
+    add: bool
+    reason: str
+
+class Result(BaseModel):
+    Result: InnerResult
+
 def generate_hw03(question2, question3):
-    pass
+    agent_prompt = hub.pull("hwchase17/openai-functions-agent")
+
+    history = ChatMessageHistory()
+    def get_history() -> ChatMessageHistory:
+        return history
+    
+    
+
+    tool = StructuredTool.from_function(
+        name= "get_response",
+        description="查詢台灣紀念日",
+        func= generate_hw02,
+    )    
+    tools = [tool]
+    agent = create_openai_functions_agent(llm,tools,agent_prompt)
+    agent_exe = AgentExecutor(agent=agent,tools=tools)
+    agent_with_chat_history = RunnableWithMessageHistory(
+        agent_exe,
+        get_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+    )
+    response = agent_with_chat_history.invoke({"input":question2}).get('output')
+
+    response = agent_with_chat_history.invoke({"input":question3}).get('output')
+
+    output_parser = PydanticOutputParser(pydantic_object=Result)
+    format_instructions = output_parser.get_format_instructions()
+    prompt = ChatPromptTemplate.from_messages([
+        ("system","回答使用者問題後，整理成Json格式.\n{format_instructions}"),
+        ("human","{question}，請將回答放入Result中，有兩個欄位，第一add欄位，請填是否該添加此紀念日，第二，reason請填入原因")
+    ])
+    prompt = prompt.partial(format_instructions = format_instructions)
+    response = llm.invoke(prompt.format_messages(question = response)).content
+    return generateAnswer(response)
     
 def generate_hw04(question):
     pass
@@ -119,4 +164,7 @@ def demo(question):
 
 
 question = "2024年台灣10月紀念日有哪些?"
-print(generate_hw02(question))
+
+question2 = "2024年台灣10月紀念日有哪些?"
+question3 = "蔣公誕辰紀念日是否有在該月份清單？"
+print(generate_hw03(question2,question3))
