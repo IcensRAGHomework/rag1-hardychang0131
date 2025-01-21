@@ -48,3 +48,20 @@ def generate_hw03(question2, question3):
 def generate_hw04(question):
     pass
     
+def demo(question):
+    llm = AzureChatOpenAI(
+            model=gpt_config['model_name'],
+            deployment_name=gpt_config['deployment_name'],
+            openai_api_key=gpt_config['api_key'],
+            openai_api_version=gpt_config['api_version'],
+            azure_endpoint=gpt_config['api_base'],
+            temperature=gpt_config['temperature']
+    )
+    message = HumanMessage(
+            content=[
+                {"type": "text", "text": question},
+            ]
+    )
+    response = llm.invoke([message])
+    
+    return response
