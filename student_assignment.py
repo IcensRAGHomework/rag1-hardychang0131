@@ -1,6 +1,10 @@
 import json
 import traceback
-
+import requests
+from langchain import hub
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 from model_configurations import get_model_configuration
 
 from langchain_openai import AzureChatOpenAI
@@ -41,9 +45,47 @@ def generate_hw01(question):
     response = llm.invoke(prompt.format_messages(question = question)).content
     return generateAnswer(response)
 
+def get_hw2_response(year: int, month: int):
+    url = f"https://calendarific.com/api/v2/holidays?&api_key=JlDYea1pV7aqbgqlxlb6P6rrDurH7Uvs&country=tw&year={year}&month={month}"
+    response = requests.get(url)
+    return response
+class GetValue(BaseModel):
+    year: int = Field(description= "年份")
+    month: int = Field(description= "月份")
 
 def generate_hw02(question):
-    pass
+
+    agent_prompt = hub.pull("hwchase17/openai-functions-agent")
+
+    
+    tool = StructuredTool.from_function(
+        name= "get_response",
+        description="查詢台灣紀念日",
+        func= get_hw2_response,
+        args_schema=GetValue,
+    )    
+    tools = [tool]
+    agent = create_openai_functions_agent(llm,tools,agent_prompt)
+    agent_exe = AgentExecutor(agent=agent,tools=tools)
+    response = agent_exe.invoke({"input":question}).get('output')
+    
+
+    response_schema = [
+        ResponseSchema(name = 'Result', description= '請將節慶放到此處', type= 'list'),
+        ResponseSchema(name = 'date', description= '請將節慶日期放到此處', type= 'YYYY-MM-DD'),
+        ResponseSchema(name = 'name', description= '請將節慶名稱放到此處', type= 'String'),
+    ]
+
+    output_parser = StructuredOutputParser.from_response_schemas(response_schemas=response_schema)
+    format_instructions = output_parser.get_format_instructions()
+    prompt = ChatPromptTemplate.from_messages([
+        ("system","將格式整理成Json.\n{format_instructions}"),
+        ("human","{question}")
+    ])
+    prompt = prompt.partial(format_instructions = format_instructions)
+    response = llm.invoke(prompt.format_messages(question = response)).content
+
+    return generateAnswer(response)
     
 def generate_hw03(question2, question3):
     pass
@@ -74,4 +116,4 @@ def demo(question):
 
 
 question = "2024年台灣10月紀念日有哪些?"
-print(generate_hw01(question))
+print(generate_hw02(question))
