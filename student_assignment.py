@@ -55,8 +55,7 @@ def demo(question):
             openai_api_key=gpt_config['api_key'],
             openai_api_version=gpt_config['api_version'],
             azure_endpoint=gpt_config['api_base'],
-            temperature=gpt_config['temperature']
-    )
+            temperature=gpt_config['temperature'])
     message = HumanMessage(
             content=[
                 {"type": "text", "text": question},
