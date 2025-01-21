@@ -21,11 +21,7 @@ llm = AzureChatOpenAI(
 
 def generateAnswer(response):
     response = response[8:-4]
-
-    # print(json.loads(response))
-    response = json.dumps(response, ensure_ascii=False, indent=4)
-
-    return response
+    return json.dumps(json.loads(response), ensure_ascii=False, indent=4, sort_keys=True)
 
 def generate_hw01(question):
 
